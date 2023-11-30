@@ -24,10 +24,10 @@
 ###############################################################################
 """
 Usage:
-  main_complete.py -c <config_file> -s <seed> -r <stop_rule> \
+  main.py -c <config_file> -s <seed> -r <stop_rule> \
 -a <stop_arg> -t <max_time> -i <instance_file> [--no_evolution]
 
-  main_complete.py (-h | --help)
+  main.py (-h | --help)
 
 Options:
   -c --config_file <arg>    Text file with the BRKGA-MP-IPR parameters.
@@ -281,10 +281,9 @@ def main() -> None:
     # Extracting the best tour
     ########################################
 
-    tour = []
-    for (index, key) in enumerate(best_chromosome):
-        tour.append((key, index))
-    tour.sort()
+    decoder.draw_chart(best_chromosome)
+
+    print(f"\n% Best scheduling saved")
 
     print(f"\n% Best cost: {best_cost:.2f}")
 

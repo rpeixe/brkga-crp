@@ -1,5 +1,6 @@
-from crp_instance import CrpInstance
+import matplotlib.pyplot as plt
 import math
+from crp_instance import CrpInstance
 from brkga_mp_ipr.types import BaseChromosome
 
 class CrpDecoder():
@@ -12,116 +13,157 @@ class CrpDecoder():
         self.instance = instance
 
     ###########################################################################
-
     def decode(self, chromosome: BaseChromosome, rewrite: bool) -> float:
-        def get_cultura_normal(valor):
-          "Retorna o indice da cultura na matriz dado o valor do índice no cromossomo"
-          for i in range(len(self.instance.posicao_cultura)):
-            if valor<self.instance.posicao_cultura[i]:
-              return i
+        self.build_terrain(chromosome)
 
-        def planta(cultura,lote,tempo):
-          for i in range(self.instance.matriz_dados[cultura][2]):
-            self.instance.terrenos[lote][enforce_borders(tempo+i)] = cultura
-          return enforce_borders(tempo + self.instance.matriz_dados[cultura][2])
+        return self.calcula_custo()
 
-        def get_family(lote, tempo):
-          "Retorna a familia da cultura em dado lote e tempo"
-          if self.instance.terrenos[lote][tempo] == -1:
-            return -1
-          else:
-            return self.instance.matriz_dados[self.instance.terrenos[lote][tempo]][1]
-          
-        def enforce_borders(tempo):
-          dp = self.instance.duracao_plantio
-          if tempo < 0:
-            return tempo + dp
-          else:
-            return tempo % dp
+    ###########################################################################
+    def build_terrain(self, chromosome):
+      self.instance.reset()
+      permutation = sorted((key, index) for index, key in enumerate(chromosome[:self.instance.vetor_culturas_tam]))
+      lista_culturas = list(self.get_cultura(value) for index, value in permutation)
 
-        def viabilidade(cultura,lote,tempo):
-          "Retorna se é possível plantar a cultura no lote e tempo especificados"
+      for i in range(self.instance.numero_lotes):
+        tempo_ini = self.denormalize(chromosome[self.instance.vetor_culturas_tam + i],self.instance.duracao_plantio)
 
-          # print("Cultura: " + str(cultura) + " Lote: " + str(lote) + " Tempo: " + str(tempo))
-
-          duracao_cultura = self.instance.matriz_dados[cultura][2]
-
-          # Já tem cultura da mesma família antes ou depois
-          if self.instance.matriz_dados[cultura][1] == get_family(lote, enforce_borders(tempo + duracao_cultura + 1)):
-              return False
-          elif self.instance.matriz_dados[cultura][1] == get_family(lote, enforce_borders(tempo - duracao_cultura - 1)):
-              return False
-
-          for i in range(self.instance.matriz_dados[cultura][2]):
-            # Já tem algo plantado
-            if self.instance.terrenos[lote][enforce_borders(tempo+i)] != -1:
-              return False
-            # Já tem cultura da mesma família no lote adjacente
-            elif lote>0 and get_family(lote-1, enforce_borders(tempo+i)) == self.instance.matriz_dados[cultura][1]:
-              return False
-
-          return True
-
-        def denormalize(float_number, max):
-          "Retorna um inteiro de 0 a max-1"
-          return math.ceil(float_number * max) - 1
-
-        def calcula_custo():
-          "Calcula o custo total da solução"
-          custo = 0
-          for i in range(self.instance.numero_lotes):
-            tempo_para_pousio = False
-            nada_seguido = 0
-            for j in range(self.instance.duracao_plantio):
-              if self.instance.terrenos[i][j] == -1:
-                custo += 1
-                nada_seguido += 1
-                if nada_seguido >= 3:
-                  tempo_para_pousio = True
-              else:
-                nada_seguido = 0
-            if not tempo_para_pousio:
-              custo += 999999999 # inviavel
-          return custo
-
-        self.instance.reset()
-        permutation = sorted((key, index) for index, key in enumerate(chromosome[:self.instance.vetor_culturas_tam]))
-        lista_culturas = list(get_cultura_normal(value) for index, value in permutation)
-
-        # print("Permutação")
-        # print(permutation)
-        # print("Posicao cultura")
-        # print(self.instance.posicao_cultura)
         # print("Lista de culturas")
         # print(lista_culturas)
 
-        for i in range(self.instance.numero_lotes):
-          verdinha = self.instance.cultura_normal + denormalize(chromosome[self.instance.vetor_culturas_tam+(2*i)], self.instance.cultura_verde)
-          posicao_verdinha_ini = denormalize(chromosome[self.instance.vetor_culturas_tam+(2*i)+1],self.instance.duracao_plantio)
-          posicao_verdinha = posicao_verdinha_ini
+        next_position = self.planta(self.instance.cultura_pousio, i, tempo_ini)
 
-          # print("Lista de culturas")
-          # print(lista_culturas)
+        # Tenta plantar as outras culturas na ordem
+        nova_lista_culturas = []
+        cultura_verde_plantada = False
+        for j in range(len(lista_culturas)):
+          cultura_atual = lista_culturas[j]
+          if cultura_atual >= self.instance.cultura_normal and cultura_atual != self.instance.cultura_pousio:
+            # Cultura verde
+            if cultura_verde_plantada:
+              nova_lista_culturas.append(cultura_atual)
+              continue
 
-          # Tenta plantar a verdinha
-          while(not viabilidade(verdinha,i,posicao_verdinha)):
-            posicao_verdinha = (posicao_verdinha + 1) % self.instance.duracao_plantio
-            if posicao_verdinha == posicao_verdinha_ini:
-              return 99999999999 # deu merda
+          if self.viabilidade(cultura_atual, i, next_position):
+            next_position = self.planta(cultura_atual, i, next_position)
+            if cultura_atual >= self.instance.cultura_normal and cultura_atual != self.instance.cultura_pousio:
+              # Cultura verde
+              cultura_verde_plantada = True
+
+            if self.instance.terrenos[i][self.wrap(next_position + self.instance.min_duracao)] != -1:
+              nova_lista_culturas.extend(lista_culturas[j+1:])
+              break # ja esta cheio
           else:
-            next_position = planta(verdinha,i,posicao_verdinha) # deu bom
+            nova_lista_culturas.append(cultura_atual)
 
-          # Tenta plantar as outras culturas na ordem
-          nova_lista_culturas = []
-          for j in range(len(lista_culturas)):
-            cultura = lista_culturas[j]
-            if viabilidade(cultura, i, next_position):
-              next_position = planta(cultura, i, next_position)
-              if self.instance.terrenos[i][enforce_borders(next_position + self.instance.min_duracao)] != -1:
-                nova_lista_culturas.extend(lista_culturas[j+1:])
-                break # ja esta cheio
-            else:
-              nova_lista_culturas.append(cultura)
-          lista_culturas = nova_lista_culturas
+        lista_culturas = nova_lista_culturas
+    
+    def draw_chart(self, chromosome):
+      def get_bar_length(lote, tempo):
+        cultura = self.instance.terrenos[lote][tempo]
+        length = 0
+        i = tempo
+        while  i < self.instance.duracao_plantio and self.instance.terrenos[lote][i] == cultura:
+          length += 1
+          i += 1
+        return length
 
-        return calcula_custo()
+      self.build_terrain(chromosome)
+      fig, ax = plt.subplots()
+
+      for i in range(self.instance.numero_lotes):
+        cultura_atual = None
+        for j in range(self.instance.duracao_plantio):
+          if self.instance.terrenos[i][j] != cultura_atual:
+            cultura_atual = self.instance.terrenos[i][j]
+            length = get_bar_length(i, j)
+            ax.broken_barh([(j, length)], (i+0.5, 1), facecolor='white', edgecolor='black')
+            ax.text(j + length/2, i+1, str(cultura_atual+1), va = 'center', ha = 'center', size = 'small')
+      ax.set_ylim(0.5, self.instance.numero_lotes + 0.5)
+      ax.set_xlim(0, self.instance.duracao_plantio)
+      ax.set_yticks([k for k in range(1, self.instance.numero_lotes+1)])
+      ax.set_xticks([k for k in range(0, self.instance.duracao_plantio, 10)])
+
+      plt.savefig("result.png")
+
+
+    def get_cultura(self, valor):
+      "Retorna o indice da cultura na matriz dado o valor do índice no cromossomo"
+      for i in range(len(self.instance.posicao_cultura)):
+        if valor<self.instance.posicao_cultura[i]:
+          return i
+
+    def planta(self, cultura,lote,tempo):
+      "Planta a cultura começando no tempo indicado"
+      if cultura != self.instance.cultura_pousio:
+        duracao = self.instance.matriz_dados[cultura][2]
+      else:
+        duracao = self.instance.duracao_pousio
+      for i in range(duracao):
+        self.instance.terrenos[lote][self.wrap(tempo+i)] = cultura
+      return self.wrap(tempo + duracao)
+    
+    def desplanta(self, lote,tempo):
+      "Remove a cultura começando no tempo indicado"
+      cultura = self.instance.terrenos[lote][tempo]
+
+      if cultura != self.instance.cultura_pousio:
+        duracao = self.instance.matriz_dados[cultura][2]
+      else:
+        duracao = self.instance.duracao_pousio
+      for i in range(duracao):
+        self.instance.terrenos[lote][self.wrap(tempo+i)] = -1
+
+    def get_family(self, lote, tempo):
+      "Retorna a familia da cultura em dado lote e tempo"
+      if self.instance.terrenos[lote][tempo] == -1 or self.instance.terrenos[lote][tempo] == self.instance.cultura_pousio:
+        return -1
+      else:
+        return self.instance.matriz_dados[self.instance.terrenos[lote][tempo]][1]
+      
+    def wrap(self, tempo):
+      if tempo < 0:
+        return tempo + self.instance.duracao_plantio
+      else:
+        return tempo % self.instance.duracao_plantio
+
+    def viabilidade(self, cultura,lote,tempo):
+      "Retorna se é possível plantar a cultura no lote e tempo especificados"
+
+      duracao_cultura = self.instance.matriz_dados[cultura][2]
+
+      # Já tem cultura da mesma família antes ou depois
+      if self.instance.matriz_dados[cultura][1] == self.get_family(lote, self.wrap(tempo + duracao_cultura + 1)):
+          return False
+      elif self.instance.matriz_dados[cultura][1] == self.get_family(lote, self.wrap(tempo - 1)):
+          return False
+
+      for i in range(self.instance.matriz_dados[cultura][2]):
+        # Já tem algo plantado
+        if self.instance.terrenos[lote][self.wrap(tempo+i)] != -1:
+          return False
+        # Já tem cultura da mesma família no lote anterior
+        elif lote > 0 and self.get_family(lote-1, self.wrap(tempo+i)) == self.instance.matriz_dados[cultura][1]:
+          return False
+
+      return True
+
+    def denormalize(self, float_number, max):
+      "Retorna um inteiro de 0 a max-1"
+      return math.ceil(float_number * max) - 1
+
+    def calcula_custo(self):
+      "Calcula o custo total da solução"
+      custo = 0
+
+      for i in range(self.instance.numero_lotes):
+        cv = 0
+        for j in range(self.instance.duracao_plantio):
+          cultura_terreno = self.instance.terrenos[i][j]
+          if cultura_terreno == -1 or (cultura_terreno >= self.instance.cultura_normal and cultura_terreno != self.instance.cultura_pousio):
+          #if cultura_terreno == -1 or cultura_terreno >= self.instance.cultura_normal:
+            custo += 1
+          if cultura_terreno != self.instance.cultura_pousio and cultura_terreno >= self.instance.cultura_normal and cultura_terreno != self.instance.terrenos[i][self.wrap(j+1)]:
+            cv += 1
+        if cv != 1:
+          custo += 999999999
+      return custo

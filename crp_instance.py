@@ -22,6 +22,8 @@ class CrpInstance():
         self.duracao_plantio = 72
         self.cultura_verde = 4
         self.cultura_normal = 24
+        self.cultura_pousio = self.cultura_normal + self.cultura_verde
+        self.duracao_pousio = 3
         self.matriz_dados = culturas_dados.values
         self.terrenos = [[-1] * self.duracao_plantio for _ in range(self.numero_lotes)]
         self.vetor_culturas_tam = 0
@@ -31,13 +33,21 @@ class CrpInstance():
 
     def get_num_nodes(self):
       soma=0
-      for i in range(self.cultura_normal):
+      for i in range(self.cultura_normal + self.cultura_verde):
         soma += self.duracao_plantio//self.matriz_dados[i][2] * self.numero_lotes // 2
         self.posicao_cultura.append(soma)
-      # soma *= self.numero_lotes//2
       self.vetor_culturas_tam=soma
-      soma += 2*self.numero_lotes
+      soma += self.numero_lotes
       return soma
+    
+    # def get_num_nodes(self):
+    #   soma=0
+    #   for i in range(self.cultura_normal):
+    #     soma += self.duracao_plantio//self.matriz_dados[i][2] * self.numero_lotes // 2
+    #     self.posicao_cultura.append(soma)
+    #   self.vetor_culturas_tam=soma
+    #   soma += 2*self.numero_lotes
+    #   return soma
     
     def reset(self):
        for i in range(len(self.terrenos)):
