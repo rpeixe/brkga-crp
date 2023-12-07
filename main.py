@@ -144,7 +144,7 @@ def main() -> None:
     # Load instance and adjust BRKGA parameters
     ########################################
 
-    print(f"\n[{datetime.now()}] Reading TSP data...")
+    print(f"\n[{datetime.now()}] Reading CRP data...")
 
     instance = CrpInstance(instance_file)
     print(f"Number of nodes: {instance.num_nodes}")

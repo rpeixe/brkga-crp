@@ -27,9 +27,6 @@ class CrpDecoder():
       for i in range(self.instance.numero_lotes):
         tempo_ini = self.denormalize(chromosome[self.instance.vetor_culturas_tam + i],self.instance.duracao_plantio)
 
-        # print("Lista de culturas")
-        # print(lista_culturas)
-
         next_position = self.planta(self.instance.cultura_pousio, i, tempo_ini)
 
         # Tenta plantar as outras culturas na ordem
@@ -37,15 +34,16 @@ class CrpDecoder():
         cultura_verde_plantada = False
         for j in range(len(lista_culturas)):
           cultura_atual = lista_culturas[j]
-          if cultura_atual >= self.instance.cultura_normal and cultura_atual != self.instance.cultura_pousio:
+          if cultura_atual >= self.instance.num_culturas_normais and cultura_atual != self.instance.cultura_pousio:
             # Cultura verde
+            cultura_atual = self.instance.cultura_verde
             if cultura_verde_plantada:
               nova_lista_culturas.append(cultura_atual)
               continue
 
           if self.viabilidade(cultura_atual, i, next_position):
             next_position = self.planta(cultura_atual, i, next_position)
-            if cultura_atual >= self.instance.cultura_normal and cultura_atual != self.instance.cultura_pousio:
+            if cultura_atual >= self.instance.num_culturas_normais and cultura_atual != self.instance.cultura_pousio:
               # Cultura verde
               cultura_verde_plantada = True
 
@@ -56,6 +54,50 @@ class CrpDecoder():
             nova_lista_culturas.append(cultura_atual)
 
         lista_culturas = nova_lista_culturas
+      for i in range(self.instance.numero_lotes):
+        # Segunda passada
+        custo1 = self.calcula_custo_lote(i)
+        if custo1 > self.instance.matriz_dados[self.instance.cultura_verde][2]:
+          lote_antigo = list(self.instance.terrenos[i])
+          lista_culturas_antiga = list(lista_culturas)
+          for j in range(self.instance.duracao_plantio):
+            if self.instance.terrenos[i][j] != -1 and self.instance.terrenos[i][j] != self.instance.cultura_pousio and self.instance.terrenos[i][j] != self.instance.terrenos[i][self.wrap(j-1)]:
+              lista_culturas.append(self.instance.terrenos[i][j])
+              self.desplanta(i, j)
+          tempo_ini = self.denormalize(chromosome[self.instance.vetor_culturas_tam + i],self.instance.duracao_plantio)
+
+          next_position = self.wrap(tempo_ini + self.instance.duracao_pousio)
+
+          # Tenta plantar as outras culturas na ordem
+          nova_lista_culturas = []
+          cultura_verde_plantada = False
+          for j in range(len(lista_culturas)):
+            cultura_atual = lista_culturas[j]
+            if cultura_atual >= self.instance.num_culturas_normais and cultura_atual != self.instance.cultura_pousio:
+              # Cultura verde
+              cultura_atual = self.instance.cultura_verde
+              if cultura_verde_plantada:
+                nova_lista_culturas.append(cultura_atual)
+                continue
+
+            if self.viabilidade(cultura_atual, i, next_position):
+              next_position = self.planta(cultura_atual, i, next_position)
+              if cultura_atual >= self.instance.num_culturas_normais and cultura_atual != self.instance.cultura_pousio:
+                # Cultura verde
+                cultura_verde_plantada = True
+
+              if self.instance.terrenos[i][self.wrap(next_position + self.instance.min_duracao)] != -1:
+                nova_lista_culturas.extend(lista_culturas[j+1:])
+                break # ja esta cheio
+            else:
+              nova_lista_culturas.append(cultura_atual)
+          custo2 = self.calcula_custo_lote(i)
+          if custo2 < custo1:
+            lista_culturas = nova_lista_culturas
+          else:
+            lista_culturas = lista_culturas_antiga
+            self.instance.terrenos[i] = lote_antigo
+
     
     def draw_chart(self, chromosome):
       def get_bar_length(lote, tempo):
@@ -159,11 +201,27 @@ class CrpDecoder():
         cv = 0
         for j in range(self.instance.duracao_plantio):
           cultura_terreno = self.instance.terrenos[i][j]
-          if cultura_terreno == -1 or (cultura_terreno >= self.instance.cultura_normal and cultura_terreno != self.instance.cultura_pousio):
+          if cultura_terreno == -1 or (cultura_terreno >= self.instance.num_culturas_normais and cultura_terreno != self.instance.cultura_pousio):
           #if cultura_terreno == -1 or cultura_terreno >= self.instance.cultura_normal:
             custo += 1
-          if cultura_terreno != self.instance.cultura_pousio and cultura_terreno >= self.instance.cultura_normal and cultura_terreno != self.instance.terrenos[i][self.wrap(j+1)]:
+          if cultura_terreno != self.instance.cultura_pousio and cultura_terreno >= self.instance.num_culturas_normais and cultura_terreno != self.instance.terrenos[i][self.wrap(j+1)]:
             cv += 1
         if cv != 1:
           custo += 999999999
+      return custo
+    
+    def calcula_custo_lote(self, lote):
+      "Calcula o custo de um lote"
+      custo = 0
+
+      cv = 0
+      for j in range(self.instance.duracao_plantio):
+        cultura_terreno = self.instance.terrenos[lote][j]
+        if cultura_terreno == -1 or (cultura_terreno >= self.instance.num_culturas_normais and cultura_terreno != self.instance.cultura_pousio):
+        #if cultura_terreno == -1 or cultura_terreno >= self.instance.cultura_normal:
+          custo += 1
+        if cultura_terreno != self.instance.cultura_pousio and cultura_terreno >= self.instance.num_culturas_normais and cultura_terreno != self.instance.terrenos[lote][self.wrap(j+1)]:
+          cv += 1
+      if cv != 1:
+        custo += 999999999
       return custo
