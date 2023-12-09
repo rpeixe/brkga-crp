@@ -57,7 +57,7 @@ class CrpDecoder():
       for i in range(self.instance.numero_lotes):
         # Segunda passada
         custo1 = self.calcula_custo_lote(i)
-        if custo1 > self.instance.matriz_dados[self.instance.cultura_verde][2]:
+        if custo1 > 0:
           lote_antigo = list(self.instance.terrenos[i])
           lista_culturas_antiga = list(lista_culturas)
           for j in range(self.instance.duracao_plantio):
@@ -201,8 +201,8 @@ class CrpDecoder():
         cv = 0
         for j in range(self.instance.duracao_plantio):
           cultura_terreno = self.instance.terrenos[i][j]
-          if cultura_terreno == -1 or (cultura_terreno >= self.instance.num_culturas_normais and cultura_terreno != self.instance.cultura_pousio):
-          #if cultura_terreno == -1 or cultura_terreno >= self.instance.cultura_normal:
+          #if cultura_terreno == -1 or (cultura_terreno >= self.instance.num_culturas_normais and cultura_terreno != self.instance.cultura_pousio):
+          if cultura_terreno == -1:
             custo += 1
           if cultura_terreno != self.instance.cultura_pousio and cultura_terreno >= self.instance.num_culturas_normais and cultura_terreno != self.instance.terrenos[i][self.wrap(j+1)]:
             cv += 1
@@ -217,8 +217,8 @@ class CrpDecoder():
       cv = 0
       for j in range(self.instance.duracao_plantio):
         cultura_terreno = self.instance.terrenos[lote][j]
-        if cultura_terreno == -1 or (cultura_terreno >= self.instance.num_culturas_normais and cultura_terreno != self.instance.cultura_pousio):
-        #if cultura_terreno == -1 or cultura_terreno >= self.instance.cultura_normal:
+        #if cultura_terreno == -1 or (cultura_terreno >= self.instance.num_culturas_normais and cultura_terreno != self.instance.cultura_pousio):
+        if cultura_terreno == -1:
           custo += 1
         if cultura_terreno != self.instance.cultura_pousio and cultura_terreno >= self.instance.num_culturas_normais and cultura_terreno != self.instance.terrenos[lote][self.wrap(j+1)]:
           cv += 1
