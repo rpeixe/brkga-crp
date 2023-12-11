@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import math
 
 with open("results.txt", "r", encoding="utf-16") as hd:
     lines = hd.readlines()
@@ -35,4 +36,6 @@ ax.set_yticks([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
 ax.set_xlabel("Tempo (s)")
 ax.set_ylabel("Probabilidade")
 
-plt.show()
+print(f'Média: {np.mean(times)}')
+print(f'Mediana: {np.median(times)}')
+print(f'Desvio Padrão: {np.std(times)}')

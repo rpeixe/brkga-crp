@@ -18,7 +18,7 @@ class CrpInstance():
         nome = filename + '.csv'
         # Read the CSV file
         culturas_dados = pd.read_csv(nome)
-        self.numero_lotes = 10
+        self.numero_lotes = 1
         self.duracao_plantio = 72
         self.num_culturas_verdes = 4
         self.num_culturas_normais = 24

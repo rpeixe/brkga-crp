@@ -1,0 +1,49 @@
+1 lote - custo 0
+Média: 0.12
+Mediana: 0.12
+Desvio Padrão: 0.00
+
+2 lotes - custo 0
+Média: 0.32
+Mediana: 0.32
+Desvio Padrão: 0.01
+
+3 lotes - custo 0
+Média: 0.63
+Mediana: 0.53
+Desvio Padrão: 0.24
+
+4 lotes - custo 0
+Média: 2.60
+Mediana: 2.30
+Desvio Padrão: 1.72
+
+5 lotes - custo 0
+Média: 12.08
+Mediana: 9.91
+Desvio Padrão: 9.67
+
+6 lotes - custo 4
+Média: 1.90
+Mediana: 1.33
+Desvio Padrão: 0.81
+
+7 lotes - custo 4
+Média: 4.40
+Mediana: 4.66
+Desvio Padrão: 2.09
+
+8 lotes - custo 4
+Média: 9.00
+Mediana: 9.04
+Desvio Padrão: 3.63
+
+9 lotes - custo 4
+Média: 18.14
+Mediana: 16.43
+Desvio Padrão: 9.42
+
+10 lotes - custo 4
+Média: 39.48
+Mediana: 34.69
+Desvio Padrão: 20.85

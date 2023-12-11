@@ -1,3 +1,5 @@
 python main.py 27000001 config.conf 100 dados-ipo 10 72 4 24
 
 python main.py -c config.conf -s 2700001 -r Target -a 0 -t 1800 -i dados-ipo
+
+python gettimes.py -c config.conf -s 2700001 -r Target -a 0 -t 120 -i dados-ipo > results.txt
